@@ -1,0 +1,2508 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>中央司法警官学院 · 在押人员体态异常预警系统</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js">
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        /* ===== 警用系统专用配色 ===== */
+        :root {
+            --bg-primary: #0a1628;
+            --bg-panel: #112240;
+            --bg-panel2: #1a2f4e;
+            --bg-hover: #1e3b62;
+            --border-color: #2a4a7a;
+            --border-light: #3a5a8a;
+            --text-primary: #e8edf5;
+            --text-secondary: #8aadcc;
+            --text-muted: #5a7a9a;
+            --blue: #1a6bff;
+            --blue-dark: #0f4aad;
+            --gold: #c9a84c;
+            --gold-light: #e8d48a;
+            --green: #2ecc71;
+            --yellow: #f1c40f;
+            --orange: #e67e22;
+            --red: #e74c3c;
+            --red-dark: #c0392b;
+            --shadow: 0 4px 24px rgba(0, 20, 60, .45);
+            --radius: 10px;
+            --transition: .25s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+        }
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow: hidden;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 8px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--border-light);
+        }
+
+        /* ===== 登录页 ===== */
+        #loginPage {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(145deg, #060f1f 0%, #0a1a30 50%, #0f2340 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 99999;
+        }
+
+        .login-card {
+            width: 480px;
+            background: rgba(17, 34, 64, .92);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            padding: 48px 44px 40px;
+            box-shadow: 0 0 50px rgba(0, 40, 100, .3);
+            backdrop-filter: blur(4px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--gold), var(--blue), var(--gold));
+        }
+
+        .login-badge {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 6px;
+        }
+
+        .login-badge i {
+            font-size: 42px;
+            color: var(--gold);
+        }
+
+        .login-title {
+            font-size: 26px;
+            font-weight: 700;
+            text-align: center;
+            letter-spacing: 2px;
+            background: linear-gradient(135deg, #fff 30%, var(--gold-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .login-sub {
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 14px;
+            letter-spacing: 4px;
+            margin-bottom: 32px;
+            border-bottom: 1px solid rgba(42, 74, 122, .3);
+            padding-bottom: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+            letter-spacing: 1px;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            height: 46px;
+            background: #0a1a2e;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            padding: 0 16px;
+            outline: none;
+            font-size: 15px;
+            transition: var(--transition);
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            border-color: var(--blue);
+            box-shadow: 0 0 0 3px rgba(26, 107, 255, .15);
+        }
+
+        .login-btn {
+            width: 100%;
+            height: 50px;
+            background: linear-gradient(135deg, var(--blue), var(--blue-dark));
+            border: none;
+            border-radius: 6px;
+            color: #fff;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 8px;
+            letter-spacing: 3px;
+            transition: var(--transition);
+            box-shadow: 0 4px 16px rgba(26, 107, 255, .25);
+        }
+
+        .login-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 24px rgba(26, 107, 255, .35);
+        }
+
+        .login-btn:active {
+            transform: translateY(0);
+        }
+
+        /* ===== 主应用 ===== */
+        #app {
+            display: none;
+            width: 100%;
+            height: 100%;
+            flex-direction: column;
+        }
+
+        /* ===== 顶部栏 ===== */
+        .header {
+            height: 72px;
+            background: linear-gradient(90deg, #0a1628, #0f2340, #0a1628);
+            border-bottom: 2px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 28px;
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        .header::after {
+            content: "";
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+            opacity: .4;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .header-left .badge-icon {
+            font-size: 34px;
+            color: var(--gold);
+        }
+
+        .header-left .sys-name {
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: #fff;
+        }
+
+        .header-left .sys-name small {
+            font-weight: 300;
+            font-size: 13px;
+            color: var(--text-secondary);
+            letter-spacing: 1px;
+            margin-left: 10px;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 26px;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .header-right .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .header-right .stat-item .num {
+            color: #fff;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .header-right .stat-item .num.danger {
+            color: var(--red);
+            animation: pulse-red 1.2s infinite;
+        }
+
+        @keyframes pulse-red {
+            0%,
+            100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: .4;
+            }
+        }
+
+        .header-right .badge-alarm {
+            background: var(--red);
+            color: #fff;
+            padding: 2px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .header-right .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding-left: 20px;
+            border-left: 1px solid var(--border-color);
+        }
+
+        .header-right .user-info i {
+            font-size: 20px;
+            color: var(--gold);
+        }
+
+        /* ===== 主体布局 ===== */
+        .main {
+            flex: 1;
+            display: flex;
+            min-height: 0;
+        }
+
+        /* ===== 侧边菜单 ===== */
+        .sidebar {
+            width: 220px;
+            background: #0c1a30;
+            border-right: 1px solid var(--border-color);
+            overflow-y: auto;
+            flex-shrink: 0;
+            padding: 8px 0;
+        }
+
+        .menu {
+            list-style: none;
+        }
+
+        .menu li {
+            height: 52px;
+            display: flex;
+            align-items: center;
+            padding: 0 24px;
+            cursor: pointer;
+            transition: var(--transition);
+            gap: 14px;
+            font-size: 15px;
+            color: var(--text-secondary);
+            border-left: 3px solid transparent;
+            position: relative;
+        }
+
+        .menu li i {
+            width: 20px;
+            font-size: 17px;
+            color: var(--text-muted);
+            transition: var(--transition);
+        }
+
+        .menu li:hover {
+            background: var(--bg-hover);
+            color: #fff;
+        }
+
+        .menu li:hover i {
+            color: var(--gold);
+        }
+
+        .menu li.active {
+            background: rgba(26, 107, 255, .12);
+            color: #fff;
+            border-left-color: var(--blue);
+        }
+
+        .menu li.active i {
+            color: var(--blue);
+        }
+
+        .menu li .menu-tag {
+            margin-left: auto;
+            background: var(--red);
+            color: #fff;
+            font-size: 11px;
+            padding: 1px 10px;
+            border-radius: 12px;
+            font-weight: 600;
+        }
+
+        /* ===== 内容区 ===== */
+        .content {
+            flex: 1;
+            padding: 16px 20px;
+            overflow-y: auto;
+            background: radial-gradient(ellipse at 20% 50%, rgba(26, 107, 255, .03), transparent 60%);
+        }
+
+        .page {
+            display: none;
+            animation: fadeUp .3s ease;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ===== 底部栏 ===== */
+        .footer {
+            height: 38px;
+            background: #0a1628;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            font-size: 12px;
+            color: var(--text-muted);
+            flex-shrink: 0;
+        }
+
+        .footer .footer-status {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+        }
+
+        .footer .footer-status .dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 4px;
+        }
+
+        .dot.green {
+            background: var(--green);
+        }
+        .dot.yellow {
+            background: var(--yellow);
+        }
+
+        /* ===== 通用面板 ===== */
+        .panel {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            padding: 18px 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .panel-title {
+            font-size: 17px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #fff;
+            letter-spacing: 1px;
+        }
+
+        .panel-title i {
+            color: var(--gold);
+            font-size: 18px;
+        }
+
+        /* ===== KPI卡片 ===== */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 14px;
+            margin-bottom: 16px;
+        }
+
+        .kpi-card {
+            background: var(--bg-panel2);
+            border-radius: var(--radius);
+            padding: 18px 20px;
+            border: 1px solid var(--border-color);
+            transition: var(--transition);
+        }
+
+        .kpi-card:hover {
+            border-color: var(--border-light);
+            transform: translateY(-2px);
+        }
+
+        .kpi-card .kpi-title {
+            color: var(--text-secondary);
+            font-size: 13px;
+            letter-spacing: 1px;
+        }
+
+        .kpi-card .kpi-value {
+            font-size: 32px;
+            font-weight: 700;
+            margin-top: 6px;
+            color: #fff;
+        }
+
+        .kpi-card .kpi-value.danger {
+            color: var(--red);
+            animation: pulse-red 1.2s infinite;
+        }
+
+        .kpi-card .kpi-value.green {
+            color: var(--green);
+        }
+        .kpi-card .kpi-value.gold {
+            color: var(--gold);
+        }
+
+        /* ===== 总览布局 ===== */
+        .overview-layout {
+            display: grid;
+            grid-template-columns: 240px 1fr 320px;
+            gap: 16px;
+            height: calc(100% - 110px);
+            min-height: 620px;
+        }
+
+        /* ===== 点位树 ===== */
+        .tree-panel {
+            overflow-y: auto;
+        }
+
+        .tree-node {
+            padding: 10px 12px;
+            border-bottom: 1px solid rgba(42, 74, 122, .25);
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .tree-node .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            flex-shrink: 0;
+        }
+
+        .dot.red {
+            background: var(--red);
+            animation: pulse-red 1.2s infinite;
+        }
+        .dot.green {
+            background: var(--green);
+        }
+        .dot.yellow {
+            background: var(--yellow);
+        }
+
+        .tree-child {
+            padding-left: 28px;
+            color: var(--text-secondary);
+            line-height: 32px;
+            font-size: 13px;
+        }
+
+        .tree-child .alarm-text {
+            color: var(--red);
+            font-weight: 500;
+        }
+
+        .tree-child .alarm-text i {
+            margin-right: 4px;
+        }
+
+        /* ===== 视频墙 ===== */
+        .video-wall {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .wall-toolbar {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 14px;
+            flex-wrap: wrap;
+        }
+
+        .wall-toolbar button {
+            height: 34px;
+            padding: 0 16px;
+            background: var(--bg-panel2);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: var(--transition);
+        }
+
+        .wall-toolbar button:hover {
+            background: var(--bg-hover);
+            color: #fff;
+        }
+
+        .wall-toolbar button.active-wall-btn {
+            background: var(--blue);
+            border-color: var(--blue);
+            color: #fff;
+        }
+
+        .wall-toolbar button:last-child {
+            margin-left: auto;
+        }
+
+        .video-grid {
+            flex: 1;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            min-height: 0;
+        }
+
+        .camera-box {
+            background: #0a1a2e;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: var(--transition);
+        }
+
+        .camera-box:hover {
+            border-color: var(--border-light);
+        }
+
+        .camera-box.alarm-camera {
+            border-color: var(--red);
+            animation: alarmBorder 1.2s infinite;
+        }
+
+        @keyframes alarmBorder {
+            0%,
+            100% {
+                box-shadow: 0 0 8px rgba(231, 76, 60, .2);
+            }
+            50% {
+                box-shadow: 0 0 24px rgba(231, 76, 60, .5);
+            }
+        }
+
+        .camera-title {
+            height: 34px;
+            background: var(--bg-panel2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 10px;
+            font-size: 12px;
+            font-weight: 500;
+            flex-shrink: 0;
+        }
+
+        .camera-title .alarm-tag {
+            background: var(--red);
+            color: #fff;
+            padding: 1px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .camera-title .alarm-tag.warning {
+            background: var(--orange);
+        }
+
+        .camera-body {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 32px;
+            color: var(--text-muted);
+            min-height: 80px;
+            position: relative;
+        }
+
+        .camera-body .person-label {
+            position: absolute;
+            bottom: 4px;
+            right: 8px;
+            font-size: 11px;
+            color: var(--text-secondary);
+            background: rgba(0, 0, 0, .6);
+            padding: 2px 10px;
+            border-radius: 10px;
+        }
+
+        .camera-footer {
+            height: 24px;
+            background: rgba(0, 0, 0, .5);
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            font-size: 11px;
+            color: var(--text-secondary);
+            flex-shrink: 0;
+            gap: 8px;
+        }
+
+        .camera-footer .badge-id {
+            color: var(--gold);
+            font-weight: 500;
+        }
+
+        /* ===== 报警列表 ===== */
+        .alarm-panel {
+            overflow-y: auto;
+        }
+
+        .alarm-item {
+            padding: 12px 14px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: var(--transition);
+            border-left: 3px solid transparent;
+        }
+
+        .alarm-item:hover {
+            background: var(--bg-hover);
+        }
+
+        .alarm-item.level1 {
+            background: rgba(231, 76, 60, .10);
+            border-left-color: var(--red);
+        }
+
+        .alarm-item.level2 {
+            background: rgba(230, 126, 34, .10);
+            border-left-color: var(--orange);
+        }
+
+        .alarm-item .alarm-time {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .alarm-item .alarm-location {
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .alarm-item .alarm-behavior {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .alarm-item .alarm-behavior.danger {
+            color: var(--red);
+            font-weight: 500;
+        }
+
+        /* ===== 一级报警弹窗 ===== */
+        #dangerPopup {
+            position: fixed;
+            right: 30px;
+            top: 90px;
+            width: 440px;
+            background: var(--bg-panel);
+            border: 2px solid var(--red);
+            border-radius: var(--radius);
+            overflow: hidden;
+            z-index: 9999;
+            box-shadow: 0 0 40px rgba(231, 76, 60, .35);
+            display: none;
+            animation: slideInRight .4s ease;
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .danger-header {
+            height: 52px;
+            background: linear-gradient(135deg, var(--red), var(--red-dark));
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            font-size: 18px;
+            font-weight: 700;
+            color: #fff;
+            gap: 10px;
+        }
+
+        .danger-header i {
+            font-size: 22px;
+        }
+
+        .danger-body {
+            padding: 18px 20px;
+            display: flex;
+            gap: 16px;
+        }
+
+        .danger-body .danger-img {
+            width: 120px;
+            height: 90px;
+            background: var(--bg-panel2);
+            border-radius: 4px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 13px;
+            color: var(--text-muted);
+            border: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+
+        .danger-body .danger-info {
+            line-height: 28px;
+            font-size: 14px;
+        }
+
+        .danger-body .danger-info strong {
+            color: #fff;
+        }
+
+        .danger-footer {
+            padding: 12px 20px 18px;
+            text-align: right;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .danger-footer button {
+            background: var(--blue);
+            border: none;
+            color: #fff;
+            padding: 10px 28px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: var(--transition);
+        }
+
+        .danger-footer button:hover {
+            background: var(--blue-dark);
+        }
+
+        /* ===== 报警详情抽屉 ===== */
+        #alarmDrawer {
+            position: fixed;
+            top: 0;
+            right: -560px;
+            width: 560px;
+            height: 100%;
+            background: var(--bg-panel);
+            border-left: 2px solid var(--border-color);
+            transition: right .35s cubic-bezier(.22, 1, .36, 1);
+            z-index: 99999;
+            display: flex;
+            flex-direction: column;
+            box-shadow: -8px 0 40px rgba(0, 0, 0, .6);
+        }
+
+        #alarmDrawer.open {
+            right: 0;
+        }
+
+        .drawer-header {
+            height: 60px;
+            background: var(--bg-panel2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 24px;
+            font-size: 18px;
+            font-weight: 600;
+            flex-shrink: 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .drawer-header button {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 24px;
+            cursor: pointer;
+            transition: var(--transition);
+            padding: 4px 8px;
+        }
+
+        .drawer-header button:hover {
+            color: #fff;
+        }
+
+        .drawer-content {
+            padding: 24px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .drawer-content .drawer-image {
+            height: 200px;
+            background: var(--bg-panel2);
+            border-radius: 6px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 1px solid var(--border-color);
+            margin-bottom: 20px;
+            font-size: 15px;
+            color: var(--text-muted);
+        }
+
+        .drawer-content .drawer-info p {
+            margin-bottom: 10px;
+            line-height: 28px;
+            font-size: 14px;
+        }
+
+        .drawer-content .drawer-info .label {
+            color: var(--text-secondary);
+        }
+
+        .drawer-content .drawer-info .value {
+            color: #fff;
+            font-weight: 500;
+        }
+
+        .drawer-content .drawer-record {
+            margin-top: 18px;
+            padding: 16px;
+            background: var(--bg-panel2);
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+
+        .drawer-content .drawer-record h4 {
+            color: var(--gold);
+            margin-bottom: 8px;
+        }
+
+        .drawer-content .drawer-buttons {
+            margin-top: 20px;
+            display: flex;
+            gap: 12px;
+        }
+
+        .drawer-content .drawer-buttons button {
+            flex: 1;
+            height: 44px;
+            background: var(--blue);
+            border: none;
+            color: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: var(--transition);
+        }
+
+        .drawer-content .drawer-buttons button:hover {
+            background: var(--blue-dark);
+        }
+
+        .drawer-content .drawer-buttons button.btn-outline {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+        }
+
+        .drawer-content .drawer-buttons button.btn-outline:hover {
+            background: var(--bg-hover);
+            color: #fff;
+        }
+
+        /* ===== 报警台账页 ===== */
+        .search-panel {
+            margin-bottom: 16px;
+        }
+
+        .search-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .search-row input,
+        .search-row select {
+            height: 38px;
+            background: #0a1a2e;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 0 14px;
+            border-radius: 4px;
+            font-size: 13px;
+            outline: none;
+            transition: var(--transition);
+            min-width: 120px;
+        }
+
+        .search-row input:focus,
+        .search-row select:focus {
+            border-color: var(--blue);
+        }
+
+        .search-row button {
+            height: 38px;
+            padding: 0 22px;
+            background: var(--blue);
+            border: none;
+            color: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 13px;
+            transition: var(--transition);
+        }
+
+        .search-row button:hover {
+            background: var(--blue-dark);
+        }
+
+        .search-row button.btn-outline {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+        }
+
+        .search-row button.btn-outline:hover {
+            background: var(--bg-hover);
+            color: #fff;
+        }
+
+        .alarm-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .alarm-table th {
+            background: var(--bg-panel2);
+            padding: 12px 14px;
+            text-align: center;
+            font-weight: 600;
+            color: var(--text-secondary);
+            border-bottom: 2px solid var(--border-color);
+            letter-spacing: 1px;
+        }
+
+        .alarm-table td {
+            padding: 11px 14px;
+            border-bottom: 1px solid rgba(42, 74, 122, .2);
+            text-align: center;
+        }
+
+        .alarm-table tr:hover td {
+            background: rgba(26, 107, 255, .04);
+        }
+
+        .alarm-table .danger-row {
+            background: rgba(231, 76, 60, .06);
+        }
+
+        .alarm-table .danger-row td:first-child {
+            border-left: 3px solid var(--red);
+        }
+
+        .alarm-table .warning-row {
+            background: rgba(230, 126, 34, .06);
+        }
+
+        .alarm-table .warning-row td:first-child {
+            border-left: 3px solid var(--orange);
+        }
+
+        .alarm-table .status-badge {
+            display: inline-block;
+            padding: 2px 14px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-badge.pending {
+            background: rgba(231, 76, 60, .2);
+            color: var(--red);
+        }
+        .status-badge.done {
+            background: rgba(46, 204, 113, .2);
+            color: var(--green);
+        }
+
+        .alarm-table button {
+            background: var(--blue);
+            border: none;
+            color: #fff;
+            padding: 4px 14px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: var(--transition);
+        }
+
+        .alarm-table button:hover {
+            background: var(--blue-dark);
+        }
+
+        /* ===== 行为分析页 ===== */
+        .analysis-kpi {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px;
+            margin-bottom: 16px;
+        }
+
+        .analysis-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .chart-box {
+            height: 300px;
+        }
+
+        .heatmap-panel {
+            height: 380px;
+        }
+
+        .heatmap-box {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 14px;
+        }
+
+        .heat-cell {
+            height: 80px;
+            background: var(--bg-panel2);
+            border-radius: 6px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: 600;
+            font-size: 14px;
+            border: 1px solid var(--border-color);
+            transition: var(--transition);
+        }
+
+        .heat-cell.hot {
+            background: rgba(231, 76, 60, .45);
+            border-color: var(--red);
+        }
+        .heat-cell.warm {
+            background: rgba(230, 126, 34, .35);
+            border-color: var(--orange);
+        }
+        .heat-cell.mild {
+            background: rgba(241, 196, 15, .25);
+            border-color: var(--yellow);
+        }
+
+        .rank-table {
+            width: 100%;
+            margin-top: 12px;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .rank-table th {
+            background: var(--bg-panel2);
+            padding: 10px 12px;
+            text-align: center;
+            font-weight: 600;
+            color: var(--text-secondary);
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .rank-table td {
+            padding: 9px 12px;
+            border-bottom: 1px solid rgba(42, 74, 122, .2);
+            text-align: center;
+        }
+
+        .rank-table .rank-num {
+            font-weight: 700;
+            color: var(--gold);
+        }
+
+        /* ===== 系统配置页 ===== */
+        .config-layout {
+            display: grid;
+            grid-template-columns: 220px 1fr;
+            gap: 16px;
+            height: calc(100% - 20px);
+            min-height: 600px;
+        }
+
+        .config-menu {
+            padding: 12px 8px;
+            overflow-y: auto;
+        }
+
+        .config-item {
+            height: 46px;
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-bottom: 4px;
+            transition: var(--transition);
+            color: var(--text-secondary);
+            gap: 12px;
+            font-size: 14px;
+        }
+
+        .config-item:hover {
+            background: var(--bg-hover);
+            color: #fff;
+        }
+
+        .config-item.active {
+            background: rgba(26, 107, 255, .15);
+            color: #fff;
+            border-left: 3px solid var(--blue);
+        }
+
+        .config-item i {
+            width: 18px;
+            font-size: 15px;
+        }
+
+        .config-content {
+            padding: 20px 24px;
+            overflow-y: auto;
+        }
+
+        .config-tab {
+            display: none;
+            animation: fadeUp .25s ease;
+        }
+
+        .config-tab.active {
+            display: block;
+        }
+
+        .config-tab h2 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 18px;
+            color: #fff;
+            letter-spacing: 1px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 12px;
+        }
+
+        .config-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .config-table th {
+            background: var(--bg-panel2);
+            padding: 10px 14px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text-secondary);
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .config-table td {
+            padding: 10px 14px;
+            border-bottom: 1px solid rgba(42, 74, 122, .2);
+        }
+
+        .config-table .online {
+            color: var(--green);
+        }
+        .config-table .offline {
+            color: var(--red);
+        }
+
+        .rule-card {
+            margin-bottom: 20px;
+        }
+
+        .rule-card label {
+            display: block;
+            margin-bottom: 6px;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .rule-card input[type="range"] {
+            width: 100%;
+            accent-color: var(--blue);
+            height: 6px;
+            border-radius: 4px;
+            background: var(--bg-panel2);
+        }
+
+        .rule-card input[type="number"] {
+            background: #0a1a2e;
+            border: 1px solid var(--border-color);
+            color: #fff;
+            padding: 6px 12px;
+            border-radius: 4px;
+            width: 80px;
+        }
+
+        .draw-area {
+            height: 280px;
+            background: #0a1a2e;
+            border: 2px dashed var(--border-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 16px;
+            border-radius: 6px;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .blue-btn,
+        .orange-btn,
+        .gray-btn {
+            height: 38px;
+            padding: 0 22px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            color: #fff;
+            font-weight: 500;
+            margin-right: 10px;
+            transition: var(--transition);
+        }
+
+        .blue-btn {
+            background: var(--blue);
+        }
+        .blue-btn:hover {
+            background: var(--blue-dark);
+        }
+        .orange-btn {
+            background: var(--orange);
+        }
+        .orange-btn:hover {
+            background: #d35400;
+        }
+        .gray-btn {
+            background: #4a6a8a;
+        }
+        .gray-btn:hover {
+            background: #3a5a7a;
+        }
+
+        .system-card {
+            margin-bottom: 22px;
+        }
+
+        .storage-bar {
+            height: 22px;
+            background: #0a1a2e;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-top: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .storage-inner {
+            width: 68%;
+            height: 100%;
+            background: linear-gradient(90deg, var(--blue), var(--gold));
+            border-radius: 12px;
+        }
+
+        /* ===== 实时监控页 ===== */
+        .monitor-layout {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 16px;
+            height: calc(100% - 10px);
+            min-height: 640px;
+        }
+
+        .video-monitor-panel {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .monitor-header {
+            height: 44px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 0 4px;
+        }
+
+        .monitor-header .monitor-title {
+            font-size: 16px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .monitor-header .monitor-title i {
+            color: var(--gold);
+        }
+
+        .monitor-status {
+            color: var(--green);
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .monitor-status .pulse-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--green);
+            display: inline-block;
+            animation: pulse-dot 1.5s infinite;
+        }
+
+        @keyframes pulse-dot {
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: .3;
+                transform: scale(.8);
+            }
+        }
+
+        .video-player {
+            flex: 1;
+            background: #060f1f;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            position: relative;
+            overflow: hidden;
+            min-height: 360px;
+        }
+
+        .video-player .camera-overlay {
+            position: absolute;
+            inset: 0;
+        }
+
+        .video-player .person-box {
+            position: absolute;
+            width: 80px;
+            height: 130px;
+            border: 2px solid var(--blue);
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(26, 107, 255, .06);
+            backdrop-filter: blur(2px);
+        }
+
+        .video-player .person-box .person-id {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .video-player .person-box .skeleton-human {
+            font-size: 34px;
+        }
+
+        .video-player .person-box.danger-person {
+            border-color: var(--red);
+            background: rgba(231, 76, 60, .10);
+            animation: dangerPulse 1.2s infinite;
+        }
+
+        @keyframes dangerPulse {
+            0%,
+            100% {
+                box-shadow: 0 0 8px rgba(231, 76, 60, .2);
+            }
+            50% {
+                box-shadow: 0 0 30px rgba(231, 76, 60, .4);
+            }
+        }
+
+        .video-player .danger-zone {
+            position: absolute;
+            right: 40px;
+            top: 40px;
+            width: 160px;
+            height: 100px;
+            border: 2px dashed var(--red);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--red);
+            font-weight: 600;
+            font-size: 14px;
+            background: rgba(231, 76, 60, .04);
+            backdrop-filter: blur(2px);
+        }
+
+        .video-player .video-time {
+            position: absolute;
+            bottom: 12px;
+            right: 16px;
+            color: rgba(255, 255, 255, .7);
+            font-size: 12px;
+            font-variant-numeric: tabular-nums;
+            background: rgba(0, 0, 0, .5);
+            padding: 2px 12px;
+            border-radius: 4px;
+        }
+
+        .player-toolbar {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .player-toolbar button {
+            height: 36px;
+            padding: 0 16px;
+            background: var(--bg-panel2);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: var(--transition);
+        }
+
+        .player-toolbar button:hover {
+            background: var(--bg-hover);
+            color: #fff;
+        }
+
+        .player-toolbar button.active-tool {
+            background: var(--blue);
+            border-color: var(--blue);
+            color: #fff;
+        }
+
+        .right-monitor-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .right-monitor-panel .detail-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 6px 0;
+            font-size: 14px;
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(42, 74, 122, .1);
+        }
+
+        .right-monitor-panel .detail-row .label {
+            color: var(--text-secondary);
+        }
+
+        .right-monitor-panel .detail-row .value {
+            color: #fff;
+            font-weight: 500;
+        }
+
+        .right-monitor-panel .detail-row .value.danger {
+            color: var(--red);
+        }
+        .right-monitor-panel .detail-row .value.gold {
+            color: var(--gold);
+        }
+
+        .evidence-box {
+            height: 120px;
+            background: #0a1a2e;
+            margin-top: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .alarm-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 14px;
+        }
+
+        .alarm-actions button {
+            flex: 1;
+            height: 40px;
+            border: none;
+            color: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 14px;
+            transition: var(--transition);
+        }
+
+        .btn-blue {
+            background: var(--blue);
+        }
+        .btn-blue:hover {
+            background: var(--blue-dark);
+        }
+        .btn-orange {
+            background: var(--orange);
+        }
+        .btn-orange:hover {
+            background: #d35400;
+        }
+        .btn-red {
+            background: var(--red);
+        }
+        .btn-red:hover {
+            background: var(--red-dark);
+        }
+
+        .form-item {
+            margin-bottom: 14px;
+        }
+
+        .form-item label {
+            display: block;
+            margin-bottom: 4px;
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+
+        .form-item input,
+        .form-item select,
+        .form-item textarea {
+            width: 100%;
+            background: #0a1a2e;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 10px 14px;
+            border-radius: 4px;
+            font-size: 14px;
+            outline: none;
+            transition: var(--transition);
+        }
+
+        .form-item input:focus,
+        .form-item select:focus,
+        .form-item textarea:focus {
+            border-color: var(--blue);
+        }
+
+        .form-item textarea {
+            height: 100px;
+            resize: none;
+        }
+
+        .save-btn {
+            width: 100%;
+            height: 44px;
+            background: var(--blue);
+            border: none;
+            color: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 15px;
+            transition: var(--transition);
+        }
+
+        .save-btn:hover {
+            background: var(--blue-dark);
+        }
+
+        /* ===== 响应式适配 ===== */
+        @media (max-width: 1400px) {
+            .overview-layout {
+                grid-template-columns: 200px 1fr 280px;
+            }
+            .kpi-grid {
+                grid-template-columns: repeat(5, 1fr);
+            }
+        }
+
+        @media (max-width: 1200px) {
+            .overview-layout {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr auto;
+                height: auto;
+            }
+            .monitor-layout {
+                grid-template-columns: 1fr;
+            }
+            .analysis-grid {
+                grid-template-columns: 1fr;
+            }
+            .config-layout {
+                grid-template-columns: 1fr;
+            }
+            .kpi-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            .analysis-kpi {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .video-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header-left .sys-name small {
+                display: none;
+            }
+            .header-right .stat-item {
+                font-size: 12px;
+            }
+            .header-right .user-info span {
+                display: none;
+            }
+            .sidebar {
+                width: 56px;
+            }
+            .sidebar .menu li span {
+                display: none;
+            }
+            .sidebar .menu li {
+                padding: 0 18px;
+                justify-content: center;
+            }
+            .sidebar .menu li .menu-tag {
+                display: none;
+            }
+            .kpi-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .video-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            .login-card {
+                width: 92%;
+                padding: 32px 24px;
+            }
+            #dangerPopup {
+                width: 92%;
+                right: 4%;
+                top: 80px;
+            }
+            #alarmDrawer {
+                width: 100%;
+                right: -100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ===== 登录页 ===== -->
+    <div id="loginPage">
+        <div class="login-card">
+            <div class="login-badge">
+                <i class="fa-solid fa-shield-halved"></i>
+                <span class="login-title">体态异常预警系统</span>
+            </div>
+            <div class="login-sub">中央司法警官学院 · 智慧监管平台</div>
+            <div class="form-group">
+                <label><i class="fa-regular fa-user" style="margin-right:6px;"></i> 警号 / 账号</label>
+                <input type="text" placeholder="请输入警号或账号" value="cicp2026">
+            </div>
+            <div class="form-group">
+                <label><i class="fa-solid fa-lock" style="margin-right:6px;"></i> 密码</label>
+                <input type="password" placeholder="请输入密码" value="123456">
+            </div>
+            <div class="form-group">
+                <label><i class="fa-regular fa-id-card" style="margin-right:6px;"></i> 身份</label>
+                <select>
+                    <option>执勤民警</option>
+                    <option>系统管理员</option>
+                    <option>监区领导</option>
+                </select>
+            </div>
+            <button class="login-btn" onclick="login()"><i class="fa-solid fa-arrow-right-to-bracket" style="margin-right:10px;"></i>登录系统</button>
+        </div>
+    </div>
+
+    <!-- ===== 主应用 ===== -->
+    <div id="app">
+        <!-- 顶部栏 -->
+        <div class="header">
+            <div class="header-left">
+                <i class="fa-solid fa-shield-halved badge-icon"></i>
+                <span class="sys-name">在押人员体态异常预警系统 <small>中央司法警官学院</small></span>
+            </div>
+            <div class="header-right">
+                <div class="stat-item"><i class="fa-regular fa-building"></i> 第一监区</div>
+                <div class="stat-item"><i class="fa-regular fa-clock"></i> <span id="sysTime">2026-06-20 14:32:18</span></div>
+                <div class="stat-item">
+                    <i class="fa-solid fa-triangle-exclamation" style="color:var(--red);"></i>
+                    未处置 <span class="num danger">12</span>
+                </div>
+                <div class="stat-item">
+                    <i class="fa-solid fa-video" style="color:var(--green);"></i>
+                    在线 <span class="num">128</span>
+                </div>
+                <div class="user-info">
+                    <i class="fa-solid fa-user-police"></i>
+                    <span>张警官</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 主体 -->
+        <div class="main">
+            <!-- 侧边菜单 -->
+            <div class="sidebar">
+                <ul class="menu">
+                    <li class="active" onclick="switchPage('dashboardPage', this)">
+                        <i class="fa-solid fa-chart-line"></i>
+                        <span>监控总览</span>
+                    </li>
+                    <li onclick="switchPage('monitorPage', this)">
+                        <i class="fa-solid fa-video"></i>
+                        <span>实时监控</span>
+                    </li>
+                    <li onclick="switchPage('alarmPage', this)">
+                        <i class="fa-solid fa-bell"></i>
+                        <span>报警台账</span>
+                        <span class="menu-tag">12</span>
+                    </li>
+                    <li onclick="switchPage('analysisPage', this)">
+                        <i class="fa-solid fa-chart-pie"></i>
+                        <span>行为分析</span>
+                    </li>
+                    <li onclick="switchPage('configPage', this)">
+                        <i class="fa-solid fa-gear"></i>
+                        <span>系统配置</span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- 内容区 -->
+            <div class="content">
+
+                <!-- ===== 监控总览 ===== -->
+                <div class="page active" id="dashboardPage">
+                    <div class="kpi-grid">
+                        <div class="kpi-card">
+                            <div class="kpi-title"><i class="fa-regular fa-calendar-day" style="margin-right:4px;"></i> 今日报警</div>
+                            <div class="kpi-value">36</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-title"><i class="fa-regular fa-clock" style="margin-right:4px;"></i> 未处置</div>
+                            <div class="kpi-value danger">12</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-title"><i class="fa-solid fa-triangle-exclamation" style="margin-right:4px;"></i> 一级危险</div>
+                            <div class="kpi-value" style="color:var(--red);">6</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-title"><i class="fa-solid fa-video" style="margin-right:4px;"></i> 在线摄像头</div>
+                            <div class="kpi-value green">128</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-title"><i class="fa-solid fa-circle-exclamation" style="margin-right:4px;"></i> 离线摄像头</div>
+                            <div class="kpi-value" style="color:var(--orange);">2</div>
+                        </div>
+                    </div>
+
+                    <div class="overview-layout">
+                        <!-- 点位树 -->
+                        <div class="panel tree-panel">
+                            <div class="panel-title"><i class="fa-solid fa-sitemap"></i> 监区点位树</div>
+                            <div class="tree-node"><span class="dot red"></span> 第一监区 <span style="margin-left:auto;font-size:12px;color:var(--red);">3处异常</span></div>
+                            <div class="tree-child">
+                                <div>├─ 一层</div>
+                                <div>│ ├─ 1号监舍 <span style="color:var(--green);font-size:12px;">✓</span></div>
+                                <div class="alarm-text">│ ├─ 2号监舍 <i class="fa-solid fa-circle-exclamation"></i> 打架</div>
+                                <div>│ ├─ 3号监舍 <span style="color:var(--green);font-size:12px;">✓</span></div>
+                                <div>│ └─ 楼梯通道 <span style="color:var(--green);font-size:12px;">✓</span></div>
+                            </div>
+                            <div class="tree-node"><span class="dot green"></span> 第二监区</div>
+                            <div class="tree-node"><span class="dot yellow"></span> 生产车间</div>
+                            <div class="tree-node"><span class="dot green"></span> 放风场</div>
+                        </div>
+
+                        <!-- 视频墙 -->
+                        <div class="panel video-wall">
+                            <div class="wall-toolbar">
+                                <button>4分屏</button>
+                                <button class="active-wall-btn">9分屏</button>
+                                <button>16分屏</button>
+                                <button><i class="fa-solid fa-expand"></i> 全屏</button>
+                            </div>
+                            <div class="video-grid">
+                                <div class="camera-box alarm-camera" onclick="showAlarmPopup()">
+                                    <div class="camera-title">
+                                        2号监舍
+                                        <span class="alarm-tag"><i class="fa-solid fa-triangle-exclamation"></i> 打架</span>
+                                    </div>
+                                    <div class="camera-body">
+                                        🧍‍♂️ ⚡ 🧍‍♂️
+                                        <span class="person-label">P001 · P007</span>
+                                    </div>
+                                    <div class="camera-footer"><span class="badge-id">● 异常</span> 08:21:33</div>
+                                </div>
+                                <div class="camera-box">
+                                    <div class="camera-title">1号监舍</div>
+                                    <div class="camera-body">🧍‍♂️</div>
+                                    <div class="camera-footer">P012 · 正常</div>
+                                </div>
+                                <div class="camera-box">
+                                    <div class="camera-title">3号监舍</div>
+                                    <div class="camera-body">🧍‍♂️ 🧍‍♂️</div>
+                                    <div class="camera-footer">P021 · 正常</div>
+                                </div>
+                                <div class="camera-box">
+                                    <div class="camera-title">放风场</div>
+                                    <div class="camera-body">🧍‍♂️🧍‍♂️🧍‍♂️</div>
+                                    <div class="camera-footer">正常</div>
+                                </div>
+                                <div class="camera-box">
+                                    <div class="camera-title">生产车间</div>
+                                    <div class="camera-body">🧍‍♂️</div>
+                                    <div class="camera-footer">正常</div>
+                                </div>
+                                <div class="camera-box">
+                                    <div class="camera-title">楼梯通道</div>
+                                    <div class="camera-body">🧍‍♂️</div>
+                                    <div class="camera-footer">正常</div>
+                                </div>
+                                <div class="camera-box">
+                                    <div class="camera-title">走廊A</div>
+                                    <div class="camera-body">🧍‍♂️</div>
+                                    <div class="camera-footer">正常</div>
+                                </div>
+                                <div class="camera-box">
+                                    <div class="camera-title">走廊B</div>
+                                    <div class="camera-body">🧍‍♂️</div>
+                                    <div class="camera-footer">正常</div>
+                                </div>
+                                <div class="camera-box">
+                                    <div class="camera-title">卫生间门口</div>
+                                    <div class="camera-body">🧍‍♂️</div>
+                                    <div class="camera-footer">正常</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 报警列表 -->
+                        <div class="panel alarm-panel">
+                            <div class="panel-title"><i class="fa-solid fa-bell"></i> 实时报警 <span style="font-size:13px;font-weight:400;color:var(--text-secondary);margin-left:auto;">共 3 条</span></div>
+                            <div id="alarmList">
+                                <div class="alarm-item level1" onclick="showAlarmPopup()">
+                                    <div class="alarm-time">08:21:33</div>
+                                    <div class="alarm-location">2号监舍</div>
+                                    <div class="alarm-behavior danger"><i class="fa-solid fa-triangle-exclamation"></i> 多人打架</div>
+                                </div>
+                                <div class="alarm-item level1" onclick="showAlarmPopup()">
+                                    <div class="alarm-time">08:18:22</div>
+                                    <div class="alarm-location">放风场</div>
+                                    <div class="alarm-behavior danger"><i class="fa-solid fa-triangle-exclamation"></i> 倒地</div>
+                                </div>
+                                <div class="alarm-item level2">
+                                    <div class="alarm-time">08:05:11</div>
+                                    <div class="alarm-location">生产车间</div>
+                                    <div class="alarm-behavior" style="color:var(--orange);">聚众</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== 实时监控 ===== -->
+                <div class="page" id="monitorPage">
+                    <div class="monitor-layout">
+                        <div class="panel video-monitor-panel">
+                            <div class="monitor-header">
+                                <div class="monitor-title"><i class="fa-solid fa-location-dot"></i> 第一监区 / 2号监舍</div>
+                                <div class="monitor-status"><span class="pulse-dot"></span> AI 态势分析中</div>
+                            </div>
+                            <div class="video-player">
+                                <div class="camera-overlay">
+                                    <div class="person-box p1" style="left:160px;top:120px;">
+                                        <div class="person-id">P001</div>
+                                        <div class="skeleton-human">🧍‍♂️</div>
+                                    </div>
+                                    <div class="person-box p2 danger-person" style="right:180px;top:150px;">
+                                        <div class="person-id">P007</div>
+                                        <div class="skeleton-human">🤼</div>
+                                    </div>
+                                    <div class="danger-zone">⚠️ 禁区</div>
+                                </div>
+                                <div class="video-time">2026-06-20 14:32:18</div>
+                            </div>
+                            <div class="player-toolbar">
+                                <button><i class="fa-solid fa-pause"></i> 暂停</button>
+                                <button><i class="fa-solid fa-forward"></i> 2倍速</button>
+                                <button class="active-tool" onclick="captureEvidence()"><i class="fa-solid fa-camera"></i> 证据抓拍</button>
+                                <button><i class="fa-solid fa-record-vinyl"></i> 录像</button>
+                                <button style="margin-left:auto;"><i class="fa-solid fa-expand"></i> 全屏</button>
+                            </div>
+                        </div>
+
+                        <div class="right-monitor-panel">
+                            <div class="panel">
+                                <h3 style="font-size:16px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px;"><i class="fa-solid fa-circle-exclamation" style="color:var(--red);"></i> 报警详情</h3>
+                                <div class="detail-row"><span class="label">报警ID</span><span class="value">AL202606200001</span></div>
+                                <div class="detail-row"><span class="label">异常行为</span><span class="value danger"><i class="fa-solid fa-triangle-exclamation"></i> 多人打架</span></div>
+                                <div class="detail-row"><span class="label">风险等级</span><span class="value danger">一级危险</span></div>
+                                <div class="detail-row"><span class="label">发生时间</span><span class="value">14:32:18</span></div>
+                                <div class="detail-row"><span class="label">监控点位</span><span class="value">第一监区 · 2号监舍</span></div>
+                                <div class="evidence-box" id="capturePreview">📸 报警抓拍截图</div>
+                                <div class="alarm-actions">
+                                    <button class="btn-blue" onclick="handleAlarm('verify')"><i class="fa-regular fa-circle-check"></i> 已核警</button>
+                                    <button class="btn-orange" onclick="handleAlarm('dispatch')"><i class="fa-solid fa-people-arrows"></i> 现场处置</button>
+                                    <button class="btn-red" onclick="markFalseAlarm()"><i class="fa-solid fa-ban"></i> 标记误报</button>
+                                </div>
+                            </div>
+
+                            <div class="panel">
+                                <h3 style="font-size:16px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px;"><i class="fa-regular fa-pen-to-square" style="color:var(--gold);"></i> 处置登记</h3>
+                                <div class="form-item">
+                                    <label>执勤民警</label>
+                                    <input value="张警官 (警号: 01832)">
+                                </div>
+                                <div class="form-item">
+                                    <label>处置结果</label>
+                                    <select>
+                                        <option>正常行为</option>
+                                        <option>违规警告</option>
+                                        <option>谈话教育</option>
+                                        <option>移交狱政部门</option>
+                                    </select>
+                                </div>
+                                <div class="form-item">
+                                    <label>情况说明</label>
+                                    <textarea placeholder="请详细描述处置过程…">发现两名在押人员发生肢体冲突，已现场制止并带离。</textarea>
+                                </div>
+                                <div class="form-item">
+                                    <label>附件上传</label>
+                                    <input type="file" style="padding:6px 10px;">
+                                </div>
+                                <button class="save-btn"><i class="fa-regular fa-floppy-disk"></i> 保存处置记录</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== 报警台账 ===== -->
+                <div class="page" id="alarmPage">
+                    <div class="panel search-panel">
+                        <div class="search-row">
+                            <input type="date" value="2026-06-20">
+                            <input type="date" value="2026-06-20">
+                            <select>
+                                <option>全部监区</option>
+                                <option>第一监区</option>
+                                <option>第二监区</option>
+                            </select>
+                            <select>
+                                <option>全部行为</option>
+                                <option>打架</option>
+                                <option>倒地</option>
+                                <option>聚众</option>
+                                <option>攀爬</option>
+                            </select>
+                            <select>
+                                <option>全部状态</option>
+                                <option>未处置</option>
+                                <option>已处置</option>
+                            </select>
+                            <button onclick="searchAlarm()"><i class="fa-solid fa-magnifying-glass"></i> 查询</button>
+                            <button class="btn-outline" onclick="exportExcel()"><i class="fa-regular fa-file-excel"></i> 导出Excel</button>
+                            <button class="btn-outline" onclick="exportEvidence()"><i class="fa-solid fa-box-archive"></i> 导出证据包</button>
+                        </div>
+                    </div>
+                    <div class="panel">
+                        <table class="alarm-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>报警时间</th>
+                                    <th>监区</th>
+                                    <th>点位</th>
+                                    <th>行为</th>
+                                    <th>等级</th>
+                                    <th>状态</th>
+                                    <th>处置人</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="danger-row">
+                                    <td><strong>AL001</strong></td>
+                                    <td>2026-06-20 14:32</td>
+                                    <td>第一监区</td>
+                                    <td>2号监舍</td>
+                                    <td style="color:var(--red);">多人打架</td>
+                                    <td><span style="color:var(--red);font-weight:600;">一级</span></td>
+                                    <td><span class="status-badge pending">未处置</span></td>
+                                    <td>—</td>
+                                    <td><button onclick="openDrawer('AL001')">详情</button></td>
+                                </tr>
+                                <tr>
+                                    <td>AL002</td>
+                                    <td>2026-06-20 08:15</td>
+                                    <td>第一监区</td>
+                                    <td>放风场</td>
+                                    <td style="color:var(--red);">倒地</td>
+                                    <td><span style="color:var(--red);font-weight:600;">一级</span></td>
+                                    <td><span class="status-badge done">已处置</span></td>
+                                    <td>张警官</td>
+                                    <td><button onclick="openDrawer('AL002')">详情</button></td>
+                                </tr>
+                                <tr class="warning-row">
+                                    <td>AL003</td>
+                                    <td>2026-06-20 07:10</td>
+                                    <td>第二监区</td>
+                                    <td>车间</td>
+                                    <td style="color:var(--orange);">聚众</td>
+                                    <td><span style="color:var(--orange);font-weight:600;">二级</span></td>
+                                    <td><span class="status-badge done">已处置</span></td>
+                                    <td>王警官</td>
+                                    <td><button onclick="openDrawer('AL003')">详情</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- ===== 行为分析 ===== -->
+                <div class="page" id="analysisPage">
+                    <div class="analysis-kpi">
+                        <div class="kpi-card">
+                            <div class="kpi-title"><i class="fa-regular fa-chart-bar"></i> 报警总量</div>
+                            <div class="kpi-value">126</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-title"><i class="fa-solid fa-triangle-exclamation" style="color:var(--red);"></i> 一级报警</div>
+                            <div class="kpi-value" style="color:var(--red);">32</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-title"><i class="fa-solid fa-flag" style="color:var(--gold);"></i> 高发监区</div>
+                            <div class="kpi-value gold">第一监区</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-title"><i class="fa-regular fa-clock" style="color:var(--orange);"></i> 高发时段</div>
+                            <div class="kpi-value" style="color:var(--orange);">22:00</div>
+                        </div>
+                    </div>
+                    <div class="analysis-grid">
+                        <div class="panel">
+                            <div class="panel-title"><i class="fa-solid fa-chart-simple"></i> 报警趋势分析</div>
+                            <div id="trendChart" class="chart-box"></div>
+                        </div>
+                        <div class="panel">
+                            <div class="panel-title"><i class="fa-solid fa-chart-pie"></i> 异常行为占比</div>
+                            <div id="pieChart" class="chart-box"></div>
+                        </div>
+                        <div class="panel heatmap-panel">
+                            <div class="panel-title"><i class="fa-solid fa-fire" style="color:var(--orange);"></i> 监区报警热力分布</div>
+                            <div class="heatmap-box">
+                                <div class="heat-cell hot">2号监舍 <span style="font-size:12px;font-weight:400;">38次</span></div>
+                                <div class="heat-cell hot">楼梯口 <span style="font-size:12px;font-weight:400;">22次</span></div>
+                                <div class="heat-cell warm">放风场 <span style="font-size:12px;font-weight:400;">26次</span></div>
+                                <div class="heat-cell mild">车间 <span style="font-size:12px;font-weight:400;">15次</span></div>
+                                <div class="heat-cell mild">走廊A <span style="font-size:12px;font-weight:400;">11次</span></div>
+                                <div class="heat-cell">1号监舍 <span style="font-size:12px;font-weight:400;">8次</span></div>
+                            </div>
+                        </div>
+                        <div class="panel">
+                            <div class="panel-title"><i class="fa-solid fa-list-ol" style="color:var(--gold);"></i> 高频风险排行</div>
+                            <table class="rank-table">
+                                <tr><th>排名</th><th>点位</th><th>报警数</th></tr>
+                                <tr><td class="rank-num">1</td><td>2号监舍</td><td>38</td></tr>
+                                <tr><td class="rank-num">2</td><td>放风场</td><td>26</td></tr>
+                                <tr><td class="rank-num">3</td><td>楼梯口</td><td>22</td></tr>
+                                <tr><td class="rank-num">4</td><td>生产车间</td><td>15</td></tr>
+                                <tr><td class="rank-num">5</td><td>走廊A</td><td>11</td></tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== 系统配置 ===== -->
+                <div class="page" id="configPage">
+                    <div class="config-layout">
+                        <div class="panel config-menu">
+                            <div class="config-item active" onclick="showConfigTab('cameraTab',this)"><i class="fa-solid fa-video"></i> 摄像头管理</div>
+                            <div class="config-item" onclick="showConfigTab('ruleTab',this)"><i class="fa-solid fa-brain"></i> AI识别规则</div>
+                            <div class="config-item" onclick="showConfigTab('areaTab',this)"><i class="fa-solid fa-draw-polygon"></i> 区域管理</div>
+                            <div class="config-item" onclick="showConfigTab('userTab',this)"><i class="fa-solid fa-user-lock"></i> 权限管理</div>
+                            <div class="config-item" onclick="showConfigTab('systemTab',this)"><i class="fa-solid fa-server"></i> 运维管理</div>
+                        </div>
+                        <div class="panel config-content">
+                            <div class="config-tab active" id="cameraTab">
+                                <h2><i class="fa-solid fa-video" style="color:var(--gold);"></i> 摄像头管理</h2>
+                                <table class="config-table">
+                                    <tr><th>设备名称</th><th>监区</th><th>IP地址</th><th>状态</th></tr>
+                                    <tr><td>监舍01</td><td>第一监区</td><td>192.168.1.101</td><td class="online"><i class="fa-solid fa-circle" style="font-size:10px;"></i> 在线</td></tr>
+                                    <tr><td>放风场</td><td>第一监区</td><td>192.168.1.102</td><td class="offline"><i class="fa-solid fa-circle" style="font-size:10px;"></i> 离线</td></tr>
+                                    <tr><td>车间</td><td>第二监区</td><td>192.168.1.103</td><td class="online"><i class="fa-solid fa-circle" style="font-size:10px;"></i> 在线</td></tr>
+                                </table>
+                            </div>
+                            <div class="config-tab" id="ruleTab">
+                                <h2><i class="fa-solid fa-brain" style="color:var(--gold);"></i> AI识别规则</h2>
+                                <div class="rule-card">
+                                    <label>打架识别灵敏度 <span style="color:var(--text-secondary);font-weight:400;">(阈值 80%)</span></label>
+                                    <input type="range" min="1" max="100" value="80">
+                                </div>
+                                <div class="rule-card">
+                                    <label>倒地报警时长 <span style="color:var(--text-secondary);font-weight:400;">(秒)</span></label>
+                                    <input type="number" value="3"> 秒
+                                </div>
+                                <div class="rule-card">
+                                    <label>是否推送民警终端</label>
+                                    <select>
+                                        <option>是</option>
+                                        <option>否</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="config-tab" id="areaTab">
+                                <h2><i class="fa-solid fa-draw-polygon" style="color:var(--gold);"></i> 区域管理</h2>
+                                <div class="draw-area"><i class="fa-solid fa-map" style="font-size:36px;color:var(--text-muted);margin-right:12px;"></i> 摄像头区域示意图</div>
+                                <button class="blue-btn"><i class="fa-solid fa-ban"></i> 新建禁区</button>
+                                <button class="orange-btn"><i class="fa-solid fa-triangle-exclamation"></i> 新建警戒区</button>
+                                <button class="gray-btn"><i class="fa-solid fa-eye-slash"></i> 新建屏蔽区</button>
+                            </div>
+                            <div class="config-tab" id="userTab">
+                                <h2><i class="fa-solid fa-user-lock" style="color:var(--gold);"></i> 账号权限管理</h2>
+                                <table class="config-table">
+                                    <tr><th>账号</th><th>姓名</th><th>角色</th><th>状态</th></tr>
+                                    <tr><td>admin</td><td>系统管理员</td><td>系统管理员</td><td><span style="color:var(--green);">启用</span></td></tr>
+                                    <tr><td>police001</td><td>张警官</td><td>执勤民警</td><td><span style="color:var(--green);">启用</span></td></tr>
+                                </table>
+                            </div>
+                            <div class="config-tab" id="systemTab">
+                                <h2><i class="fa-solid fa-server" style="color:var(--gold);"></i> 运维管理</h2>
+                                <div class="system-card">
+                                    <div style="display:flex;justify-content:space-between;"><span>存储使用率</span><span>68%</span></div>
+                                    <div class="storage-bar"><div class="storage-inner"></div></div>
+                                </div>
+                                <div class="system-card">
+                                    <span>当前模型版本</span> <strong style="color:var(--gold);">AI-Pose v3.2.8</strong>
+                                </div>
+                                <div class="system-card">
+                                    <button class="blue-btn"><i class="fa-solid fa-cloud-arrow-up"></i> 在线升级模型</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div><!-- /content -->
+        </div><!-- /main -->
+
+        <!-- 底部栏 -->
+        <div class="footer">
+            <div class="footer-status">
+                <span><span class="dot green"></span> 在线摄像头：128</span>
+                <span><span class="dot yellow"></span> 今日报警：36</span>
+            </div>
+            <div>系统运行状态：<span style="color:var(--green);"><i class="fa-solid fa-circle" style="font-size:8px;"></i> 正常</span></div>
+        </div>
+    </div><!-- /app -->
+
+    <!-- ===== 一级报警弹窗 ===== -->
+    <div id="dangerPopup">
+        <div class="danger-header"><i class="fa-solid fa-triangle-exclamation"></i> 一级危险报警</div>
+        <div class="danger-body">
+            <div class="danger-img"><i class="fa-solid fa-image" style="font-size:28px;color:var(--text-muted);"></i></div>
+            <div class="danger-info">
+                <div><strong>行为：</strong>多人打架</div>
+                <div><strong>点位：</strong>第一监区 · 2号监舍</div>
+                <div><strong>时间：</strong>14:32:18</div>
+                <div><strong>人员：</strong>P001 · P007</div>
+            </div>
+        </div>
+        <div class="danger-footer">
+            <button onclick="closeAlarm()"><i class="fa-regular fa-circle-check"></i> 已核警，立即处置</button>
+        </div>
+    </div>
+
+    <!-- ===== 报警详情抽屉 ===== -->
+    <div id="alarmDrawer">
+        <div class="drawer-header">
+            <div><i class="fa-solid fa-file-lines" style="color:var(--gold);margin-right:10px;"></i> 报警详情</div>
+            <button onclick="closeDrawer()"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="drawer-content">
+            <div class="drawer-image"><i class="fa-solid fa-image" style="font-size:40px;color:var(--text-muted);"></i></div>
+            <div class="drawer-info">
+                <p><span class="label">报警ID：</span><span class="value" id="drawerId">AL001</span></p>
+                <p><span class="label">异常行为：</span><span class="value danger">多人打架</span></p>
+                <p><span class="label">风险等级：</span><span class="value danger">一级危险</span></p>
+                <p><span class="label">发生时间：</span><span class="value">2026-06-20 14:32</span></p>
+                <p><span class="label">监控点位：</span><span class="value">第一监区 · 2号监舍</span></p>
+                <p><span class="label">涉及人员：</span><span class="value">P001, P007</span></p>
+                <p><span class="label">处置状态：</span><span class="value" style="color:var(--red);">未处置</span></p>
+            </div>
+            <div class="drawer-record">
+                <h4><i class="fa-regular fa-clock" style="margin-right:6px;"></i> 处置记录</h4>
+                <p style="color:var(--text-muted);font-size:13px;">暂无处置记录</p>
+            </div>
+            <div class="drawer-buttons">
+                <button onclick="downloadEvidence()"><i class="fa-solid fa-download"></i> 导出当前证据</button>
+                <button class="btn-outline" onclick="closeDrawer()">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 业务脚本 ===== -->
+    <script>
+        // -------- 登录 --------
+        function login() {
+            document.getElementById('loginPage').style.display = 'none';
+            document.getElementById('app').style.display = 'flex';
+            setTimeout(initCharts, 300);
+            updateClock();
+            setInterval(updateClock, 1000);
+        }
+
+        // -------- 时钟 --------
+        function updateClock() {
+            const now = new Date();
+            const s = now.getFullYear() + '-' +
+                String(now.getMonth() + 1).padStart(2, '0') + '-' +
+                String(now.getDate()).padStart(2, '0') + ' ' +
+                String(now.getHours()).padStart(2, '0') + ':' +
+                String(now.getMinutes()).padStart(2, '0') + ':' +
+                String(now.getSeconds()).padStart(2, '0');
+            document.getElementById('sysTime').textContent = s;
+        }
+
+        // -------- 页面切换 --------
+        function switchPage(pageId, obj) {
+            document.querySelectorAll('.menu li').forEach(li => li.classList.remove('active'));
+            obj.classList.add('active');
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+            if (pageId === 'analysisPage') {
+                setTimeout(initCharts, 100);
+            }
+        }
+
+        // -------- 配置页标签切换 --------
+        function showConfigTab(id, obj) {
+            document.querySelectorAll('.config-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.config-item').forEach(it => it.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            obj.classList.add('active');
+        }
+
+        // -------- 报警弹窗 --------
+        function showAlarmPopup() {
+            document.getElementById('dangerPopup').style.display = 'block';
+        }
+
+        function closeAlarm() {
+            document.getElementById('dangerPopup').style.display = 'none';
+        }
+
+        // -------- 抽屉 --------
+        function openDrawer(id) {
+            document.getElementById('alarmDrawer').classList.add('open');
+            document.getElementById('drawerId').textContent = id;
+        }
+
+        function closeDrawer() {
+            document.getElementById('alarmDrawer').classList.remove('open');
+        }
+
+        // -------- 证据抓拍 --------
+        function captureEvidence() {
+            document.getElementById('capturePreview').innerHTML = '✅ 证据抓拍成功 (2026-06-20 14:32:18)';
+        }
+
+        // -------- 标记误报 --------
+        function markFalseAlarm() {
+            const reason = prompt('请输入误报原因：');
+            if (reason) {
+                alert('✅ 误报已记录\n原因：' + reason);
+            }
+        }
+
+        // -------- 报警处理 --------
+        function handleAlarm(action) {
+            const map = {
+                verify: '✅ 已核警，报警记录已更新',
+                dispatch: '🚔 已派单，现场处置中'
+            };
+            alert(map[action] || '操作已执行');
+        }
+
+        // -------- 台账操作 --------
+        function searchAlarm() { alert('🔍 执行报警查询...'); }
+
+        function exportExcel() { alert('📊 导出Excel成功'); }
+
+        function exportEvidence() { alert('📦 开始导出证据包...'); }
+
+        function downloadEvidence() { alert('⬇️ 导出当前报警证据'); }
+
+        // -------- ECharts 图表 --------
+        function initCharts() {
+            const trendDom = document.getElementById('trendChart');
+            const pieDom = document.getElementById('pieChart');
+            if (!trendDom || !pieDom) return;
+
+            const trend = echarts.init(trendDom);
+            trend.setOption({
+                tooltip: { trigger: 'axis' },
+                grid: { left: '6%', right: '6%', top: '10%', bottom: '15%' },
+                xAxis: {
+                    type: 'category',
+                    data: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
+                    axisLine: { lineStyle: { color: '#2a4a7a' } },
+                    axisLabel: { color: '#8aadcc' }
+                },
+                yAxis: {
+                    type: 'value',
+                    splitLine: { lineStyle: { color: 'rgba(42,74,122,.25)', type: 'dashed' } },
+                    axisLabel: { color: '#8aadcc' }
+                },
+                series: [{
+                    data: [12, 18, 15, 26, 20, 17, 22],
+                    type: 'line',
+                    smooth: true,
+                    lineStyle: { color: '#1a6bff', width: 3 },
+                    areaStyle: { color: 'rgba(26,107,255,.12)' },
+                    symbol: 'circle',
+                    symbolSize: 8,
+                    itemStyle: { color: '#1a6bff' }
+                }]
+            });
+
+            const pie = echarts.init(pieDom);
+            pie.setOption({
+                tooltip: { trigger: 'item' },
+                series: [{
+                    type: 'pie',
+                    radius: ['45%', '70%'],
+                    avoidLabelOverlap: true,
+                    itemStyle: {
+                        borderRadius: 6,
+                        borderColor: '#112240',
+                        borderWidth: 2
+                    },
+                    label: {
+                        color: '#e8edf5',
+                        fontSize: 12
+                    },
+                    labelLine: {
+                        lineStyle: { color: '#2a4a7a' }
+                    },
+                    data: [
+                        { value: 35, name: '打架', itemStyle: { color: '#e74c3c' } },
+                        { value: 28, name: '倒地', itemStyle: { color: '#e67e22' } },
+                        { value: 18, name: '聚众', itemStyle: { color: '#f1c40f' } },
+                        { value: 12, name: '攀爬', itemStyle: { color: '#1a6bff' } },
+                        { value: 7, name: '遮挡面部', itemStyle: { color: '#9b59b6' } }
+                    ]
+                }]
+            });
+
+            window.addEventListener('resize', () => {
+                trend.resize();
+                pie.resize();
+            });
+        }
+
+        // -------- 键盘快捷键（Esc关闭弹窗/抽屉） --------
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeAlarm();
+                closeDrawer();
+            }
+        });
+
+        // -------- 初始化时钟（未登录时也走） --------
+        setInterval(updateClock, 1000);
+        updateClock();
+    </script>
+
+</body>
+</html>
